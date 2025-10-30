@@ -175,9 +175,9 @@ const App: React.FC = () => {
             </div>
             <button
               onClick={() => resetState()}
-              className="px-4 py-2 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2 text-sm"
+              className="px-4 py-2 bg-gray-700 text-white font-semibold rounded-lg hover:bg-gray-600 transition-colors duration-200 flex items-center gap-2 text-sm group"
             >
-              <RefreshIcon className="w-5 h-5" />
+              <RefreshIcon className="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" />
               Nuovo Restauro
             </button>
           </div>
