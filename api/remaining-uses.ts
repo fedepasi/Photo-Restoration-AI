@@ -1,8 +1,20 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { kv } from '@vercel/kv';
+import Redis from 'ioredis';
 
 const MAX_USES = 100;
 const GLOBAL_COUNTER_KEY = 'photo-restoration-global-uses';
+
+// Create Redis client
+const getRedisClient = () => {
+  if (!process.env.REDIS_URL) {
+    throw new Error('REDIS_URL environment variable is not set');
+  }
+  return new Redis(process.env.REDIS_URL, {
+    maxRetriesPerRequest: 3,
+    enableReadyCheck: true,
+    connectTimeout: 10000,
+  });
+};
 
 export default async function handler(
   req: VercelRequest,
@@ -22,9 +34,12 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const redis = getRedisClient();
+
   try {
-    // Get current uses count from KV
-    const currentUses = await kv.get<number>(GLOBAL_COUNTER_KEY) || 0;
+    // Get current uses count from Redis
+    const currentUsesStr = await redis.get(GLOBAL_COUNTER_KEY);
+    const currentUses = currentUsesStr ? parseInt(currentUsesStr, 10) : 0;
     const remainingUses = Math.max(0, MAX_USES - currentUses);
 
     return res.status(200).json({
@@ -38,5 +53,7 @@ export default async function handler(
       error: 'Failed to fetch remaining uses',
       remainingUses: 0
     });
+  } finally {
+    await redis.quit();
   }
 }
