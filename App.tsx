@@ -184,10 +184,24 @@ const App: React.FC = () => {
         </header>
 
         {isLocked ? (
-          <div className="text-center p-8 bg-red-900/50 border border-red-700 rounded-lg">
-            <h2 className="text-3xl font-bold text-white mb-4">Nessun Utilizzo Rimasto</h2>
-            <p className="text-red-200 text-lg">Hai esaurito le tue prove gratuite. Per ulteriori restauri, contatta:</p>
-            <a href={`mailto:${CONTACT_EMAIL}`} className="text-green-400 font-bold text-xl mt-4 inline-block hover:underline">{CONTACT_EMAIL}</a>
+          <div className="text-center p-8 bg-gradient-to-br from-blue-900/30 to-purple-900/30 border border-blue-700/50 rounded-lg">
+            <div className="mb-6">
+              <SparklesIcon className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+              <h2 className="text-3xl font-bold text-white mb-4">Grazie per aver provato RetroRestore AI!</h2>
+              <p className="text-gray-300 text-lg mb-2">Hai utilizzato tutte le {MAX_USES} prove gratuite disponibili.</p>
+              <p className="text-gray-400 mb-6">Questa è un'app dimostrativa gratuita con utilizzi limitati per tutti gli utenti.</p>
+            </div>
+            <div className="bg-[#161B22] border border-gray-700 rounded-lg p-6 max-w-md mx-auto">
+              <p className="text-gray-300 mb-3">Vuoi sbloccare più restauri o hai bisogno di supporto?</p>
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors duration-300"
+              >
+                <span>✉️</span>
+                Contattami
+              </a>
+              <p className="text-gray-500 text-sm mt-3">{CONTACT_EMAIL}</p>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col lg:flex-row gap-8">
@@ -253,7 +267,7 @@ const App: React.FC = () => {
           </div>
         )}
         
-        {!selectedFile && !isLocked && (
+        {!selectedFile && (
             <div className="mt-12 border-t border-gray-700 pt-8">
                  <div className='text-center mb-6'>
                     <h2 className='text-2xl font-semibold'>Guarda la nostra AI in azione</h2>
