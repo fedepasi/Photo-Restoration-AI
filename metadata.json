@@ -1,0 +1,5 @@
+{
+  "name": "Restauro Foto AI",
+  "description": "Un'applicazione che utilizza un processo AI multi-fase per restaurare e colorizzare foto vecchie o danneggiate, fornendo una visione chiara della trasformazione in ogni fase.",
+  "requestFramePermissions": []
+}
