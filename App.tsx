@@ -8,7 +8,7 @@ import { generateRestorationPlan, executeRestorationStep } from './services/gemi
 import { sendLog } from './services/loggingService';
 import { SparklesIcon, RefreshIcon, DownloadIcon, CheckCircleIcon, SpinnerIcon, CloseIcon } from './components/Icons';
 
-const MAX_USES = 5;
+const MAX_USES = 100;
 const CONTACT_EMAIL = "info@federicopasinetti.it";
 
 const App: React.FC = () => {
@@ -25,12 +25,23 @@ const App: React.FC = () => {
   const isRestorationComplete = steps.length > 0 && steps[steps.length - 1].status === 'completed';
 
   useEffect(() => {
-    const storedUses = localStorage.getItem('photoRestorerUses');
-    if (storedUses) {
-      setUsesLeft(JSON.parse(storedUses));
-    } else {
-      localStorage.setItem('photoRestorerUses', JSON.stringify(MAX_USES));
-    }
+    // Fetch remaining uses from server
+    const fetchRemainingUses = async () => {
+      try {
+        const response = await fetch('/api/remaining-uses');
+        if (response.ok) {
+          const data = await response.json();
+          setUsesLeft(data.remainingUses);
+        } else {
+          console.error('Failed to fetch remaining uses');
+          setUsesLeft(0);
+        }
+      } catch (error) {
+        console.error('Error fetching remaining uses:', error);
+        setUsesLeft(0);
+      }
+    };
+    fetchRemainingUses();
   }, []);
 
   const handleImageSelect = (file: File) => {
@@ -66,9 +77,19 @@ const App: React.FC = () => {
     setSteps([]);
 
     try {
-      const newUses = usesLeft - 1;
-      setUsesLeft(newUses);
-      localStorage.setItem('photoRestorerUses', JSON.stringify(newUses));
+      // Record usage via API
+      const useResponse = await fetch('/api/use-photo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!useResponse.ok) {
+        const errorData = await useResponse.json();
+        throw new Error(errorData.error || 'Impossibile registrare l\'utilizzo');
+      }
+
+      const useData = await useResponse.json();
+      setUsesLeft(useData.remainingUses);
 
       const { base64, mimeType } = await fileToBase64(selectedFile);
       const plan = await generateRestorationPlan(base64, mimeType, userPrompt);
@@ -102,10 +123,18 @@ const App: React.FC = () => {
         setSteps(prev => prev.map((s, idx) => idx === i ? { ...s, status: 'completed', afterImage: resultDataUrl } : s));
       }
 
-      // Invia il log al termine del processo
-      await sendLog({
+      // Invia il log al termine del processo (in background)
+      const originalImageDataUrl = `data:${mimeType};base64,${base64}`;
+      const finalImageDataUrl = stepsForLog[stepsForLog.length - 1].afterImage!;
+
+      sendLog({
         userPrompt: userPrompt,
         steps: stepsForLog,
+        originalImage: originalImageDataUrl,
+        finalImage: finalImageDataUrl,
+      }).catch(err => {
+        console.error('Failed to log execution:', err);
+        // Don't throw - logging is non-critical
       });
 
     } catch (e: any) {
