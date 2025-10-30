@@ -39,17 +39,19 @@ const StepCard: React.FC<StepCardProps> = ({ step, stepNumber }) => {
           <div className="space-y-2">
             <h4 className="text-xs font-medium text-gray-500 text-center">PRIMA</h4>
             {step.beforeImage ? (
-              <img src={step.beforeImage} alt={`Prima del passaggio ${stepNumber}`} className="rounded-md w-full aspect-video object-contain bg-black" />
+              <img src={step.beforeImage} alt={`Prima del passaggio ${stepNumber}`} className="rounded-md w-full aspect-video object-contain bg-black fade-in" />
             ) : (
-                <div className="rounded-md w-full aspect-video bg-black/50 flex items-center justify-center text-gray-500 text-sm">In attesa</div>
+                <div className={`rounded-md w-full aspect-video bg-black/50 flex items-center justify-center text-gray-500 text-sm ${step.status === 'in-progress' ? 'pulse-animate' : ''}`}>
+                  {step.status === 'in-progress' ? <SpinnerIcon className="w-5 h-5" /> : 'In attesa'}
+                </div>
             )}
           </div>
           <div className="space-y-2">
             <h4 className="text-xs font-medium text-gray-500 text-center">DOPO</h4>
             {step.afterImage ? (
-              <img src={step.afterImage} alt={`Dopo il passaggio ${stepNumber}`} className="rounded-md w-full aspect-video object-contain bg-black" />
+              <img src={step.afterImage} alt={`Dopo il passaggio ${stepNumber}`} className="rounded-md w-full aspect-video object-contain bg-black fade-in" />
             ) : (
-              <div className="rounded-md w-full aspect-video bg-black/50 flex items-center justify-center text-gray-500 text-sm">
+              <div className={`rounded-md w-full aspect-video bg-black/50 flex items-center justify-center text-gray-500 text-sm ${step.status === 'in-progress' ? 'pulse-animate' : ''}`}>
                 {step.status === 'in-progress' && <SpinnerIcon className="w-5 h-5" />}
                 {step.status === 'failed' && 'Fallito'}
                 {step.status === 'pending' && 'In attesa...'}

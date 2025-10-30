@@ -11,6 +11,48 @@
       font-family: sans-serif;
       color: #E6EDF3; /* GitHub dark theme text */
     }
+
+    /* Spinner animation - always works, no Tailwind dependency */
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spinner-rotate {
+      animation: spin 1s linear infinite;
+    }
+
+    /* Pulse animation for loading states */
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .pulse-animate {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Fade in animation for images */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease-in;
+    }
   </style>
   <script type="importmap">
   {
