@@ -6,6 +6,7 @@ import { RestorationStep } from './types';
 import { fileToBase64 } from './utils/fileUtils';
 import { generateRestorationPlan, executeRestorationStep } from './services/geminiService';
 import { sendLog } from './services/loggingService';
+import { compressImage } from './utils/imageCompression';
 import { SparklesIcon, RefreshIcon, DownloadIcon, CheckCircleIcon, SpinnerIcon, CloseIcon } from './components/Icons';
 
 const MAX_USES = 100;
@@ -20,6 +21,8 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [usesLeft, setUsesLeft] = useState<number>(MAX_USES);
   const [modalImage, setModalImage] = useState<string | null>(null);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState<boolean>(false);
 
 
   const isRestorationComplete = steps.length > 0 && steps[steps.length - 1].status === 'completed';
@@ -44,10 +47,76 @@ const App: React.FC = () => {
     fetchRemainingUses();
   }, []);
 
-  const handleImageSelect = (file: File) => {
+  const handleImageSelect = async (file: File) => {
     resetState(false);
-    setSelectedFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    setUploadMessage(null);
+
+    const MAX_SIZE_MB = 10; // Limite massimo assoluto
+    const COMPRESS_THRESHOLD_MB = 5; // Soglia per compressione automatica
+    const fileSizeMB = file.size / (1024 * 1024);
+
+    // Validazione formato
+    const validFormats = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!validFormats.includes(file.type)) {
+      setError(`Formato non supportato. Usa PNG, JPG o WEBP.`);
+      return;
+    }
+
+    // Blocca se supera limite massimo
+    if (fileSizeMB > MAX_SIZE_MB) {
+      setError(`Immagine troppo grande (${fileSizeMB.toFixed(1)} MB). Dimensione massima: ${MAX_SIZE_MB} MB. Riduci la dimensione dell'immagine e riprova.`);
+      return;
+    }
+
+    // Se supera 5MB, comprimi automaticamente
+    if (fileSizeMB > COMPRESS_THRESHOLD_MB) {
+      setIsCompressing(true);
+      setUploadMessage(`⏳ Compressione in corso (${fileSizeMB.toFixed(1)} MB)...`);
+
+      try {
+        // Converti file a data URL
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const dataUrl = e.target?.result as string;
+
+            // Comprimi l'immagine
+            const compressedDataUrl = await compressImage(dataUrl, 1920, 1920, 0.85);
+            const compressedSizeMB = (compressedDataUrl.length * 3) / 4 / (1024 * 1024);
+
+            // Converti data URL compressa in Blob e poi in File
+            const response = await fetch(compressedDataUrl);
+            const blob = await response.blob();
+            const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+
+            setSelectedFile(compressedFile);
+            setImagePreview(compressedDataUrl);
+            setUploadMessage(`✅ Immagine compressa: ${fileSizeMB.toFixed(1)} MB → ${compressedSizeMB.toFixed(1)} MB`);
+            setIsCompressing(false);
+
+            // Nascondi messaggio dopo 4 secondi
+            setTimeout(() => setUploadMessage(null), 4000);
+          } catch (error) {
+            console.error('Errore durante compressione:', error);
+            setError('Errore durante la compressione dell\'immagine. Prova con un\'immagine più piccola.');
+            setIsCompressing(false);
+          }
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('Errore lettura file:', error);
+        setError('Impossibile leggere il file immagine.');
+        setIsCompressing(false);
+      }
+    } else {
+      // Immagine OK, carica normalmente
+      setSelectedFile(file);
+      setImagePreview(URL.createObjectURL(file));
+      if (fileSizeMB > 1) {
+        setUploadMessage(`📊 Dimensione: ${fileSizeMB.toFixed(1)} MB`);
+        setTimeout(() => setUploadMessage(null), 3000);
+      }
+    }
   };
   
   const resetState = (keepImage = false) => {
@@ -213,7 +282,19 @@ const App: React.FC = () => {
                     <h2 className='text-xl font-semibold'>Dai nuova vita alle tue vecchie foto</h2>
                     <p className='text-gray-400'>Carica un'immagine e lascia che la nostra intelligenza artificiale la restauri, la colori e ne migliori la qualità, passo dopo passo.</p>
                   </div>
-                  <ImageUploader onImageSelect={handleImageSelect} imagePreview={imagePreview} disabled={isProcessing} />
+                  <ImageUploader onImageSelect={handleImageSelect} imagePreview={imagePreview} disabled={isProcessing || isCompressing} />
+
+                  {/* Messaggio di upload/compressione */}
+                  {uploadMessage && (
+                    <div className={`p-3 rounded-lg text-sm ${
+                      uploadMessage.includes('✅') ? 'bg-green-900/30 border border-green-700 text-green-200' :
+                      uploadMessage.includes('⏳') ? 'bg-blue-900/30 border border-blue-700 text-blue-200' :
+                      'bg-gray-800 border border-gray-600 text-gray-300'
+                    }`}>
+                      {uploadMessage}
+                    </div>
+                  )}
+
                   <textarea
                     value={userPrompt}
                     onChange={(e) => setUserPrompt(e.target.value)}
