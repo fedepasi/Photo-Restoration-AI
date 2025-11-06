@@ -1,4 +1,5 @@
 import { RestorationStep } from '../types';
+import { compressImage } from '../utils/imageCompression';
 
 interface LogPayload {
     userPrompt: string;
@@ -16,25 +17,38 @@ export const sendLog = async (logData: LogPayload): Promise<void> => {
     console.log("--- LOG DI UTILIZZO APP ---");
     console.log("Invio log al server...");
 
-    // Calcola dimensioni payload
+    // Calcola dimensioni payload originale
     const originalSize = (logData.originalImage.length * 3) / 4 / (1024 * 1024);
     const finalSize = (logData.finalImage.length * 3) / 4 / (1024 * 1024);
     const totalSize = originalSize + finalSize;
 
-    console.log(`📊 Dimensioni immagini:
+    console.log(`📊 Dimensioni immagini originali:
     - Originale: ${originalSize.toFixed(2)} MB
     - Finale: ${finalSize.toFixed(2)} MB
     - Totale: ${totalSize.toFixed(2)} MB
     - Limite Vercel: ~4.5 MB`);
 
-    if (totalSize > 4.5) {
-        console.warn("⚠️ ATTENZIONE: Il payload supera il limite di Vercel (4.5MB)!");
+    // Comprimi le immagini se necessario
+    let compressedOriginal = logData.originalImage;
+    let compressedFinal = logData.finalImage;
+
+    if (totalSize > 4.0) {
+        console.log("🗜️ Compressione immagini in corso...");
+        try {
+            compressedOriginal = await compressImage(logData.originalImage, 1200, 1200, 0.8);
+            compressedFinal = await compressImage(logData.finalImage, 1200, 1200, 0.8);
+
+            const newTotalSize = (compressedOriginal.length + compressedFinal.length) * 3 / 4 / (1024 * 1024);
+            console.log(`✅ Compressione completata! Nuova dimensione totale: ${newTotalSize.toFixed(2)} MB`);
+        } catch (error) {
+            console.warn("⚠️ Errore durante compressione, invio immagini originali:", error);
+        }
     }
 
     try {
         const payload = {
-            originalImage: logData.originalImage,
-            finalImage: logData.finalImage,
+            originalImage: compressedOriginal,
+            finalImage: compressedFinal,
             userPrompt: logData.userPrompt,
             steps: logData.steps.map(s => ({
                 objective: s.objective,
