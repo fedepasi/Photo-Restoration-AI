@@ -359,8 +359,17 @@ const App: React.FC = () => {
         )}
 
       </main>
-      <footer className="text-center p-4 text-gray-600 text-sm mt-8">
-        Realizzato con Google Gemini
+      <footer className="text-center p-6 text-gray-500 text-sm mt-12 border-t border-gray-800">
+        <p className="font-semibold text-gray-400">Created by Federico Pasinetti</p>
+        <p className="mt-2">
+          Hai feedback o idee? Scrivimi:{' '}
+          <a
+            href={`mailto:${CONTACT_EMAIL}`}
+            className="text-green-400 hover:text-green-300 hover:underline transition-colors"
+          >
+            {CONTACT_EMAIL}
+          </a>
+        </p>
       </footer>
 
       {modalImage && (
